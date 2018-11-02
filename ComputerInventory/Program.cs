@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using ComputerInventory.Models;
 using ComputerInventory.Data;
-
+using System.Data.Common;
 
 namespace ComputerInventory
 {
@@ -37,6 +37,8 @@ namespace ComputerInventory
                 Console.WriteLine("2. List All Operating Systems");
                 Console.WriteLine("3. Data Entry Menu");
                 Console.WriteLine("4. Data Modification Menu");
+                Console.WriteLine("5. Update Operating Systems");
+                Console.WriteLine("6. Testing");
                 Console.WriteLine("9. Exit");
 
                 cki = Console.ReadKey();
@@ -45,7 +47,7 @@ namespace ComputerInventory
                     result = Convert.ToInt16(cki.KeyChar.ToString());
                     if (result == 1)
                     {
-                        //DisplayAllMachines();
+                        DisplayAllMachines();
                     }
                     else if (result == 2)
                     {
@@ -59,6 +61,20 @@ namespace ComputerInventory
                     else if (result == 4)
                     {
                         DataModificationMenu();
+                    }
+                    else if (result == 5)
+                    {
+                        UpdateOperatingSystems();
+                    }
+                    else if (result == 6)
+                    {
+                        //Console.WriteLine();
+                        //DisplaySpecificMachineData();
+                        Console.WriteLine();
+                        //LeftOuterJoin();
+                        //RightOuterJoin();
+                        LogicalAnd();
+                        Console.ReadKey();
                     }
                     else if (result == 9)
                     {
@@ -74,6 +90,74 @@ namespace ComputerInventory
             return result;
         }
 
+
+
+        private static void UpdateOperatingSystems()
+        {
+            ConsoleKeyInfo cki;
+            string result;
+            int newOsId = -1;
+            bool valid = false;
+            Console.Clear();
+            WriteHeader($"Operating System Update");
+            List<Machine> lMachines = new List<Machine>();
+            bool cont = false;
+            do
+            {
+                valid = false;
+                lMachines.Add(GetMachine());
+                Console.WriteLine("Do you want to add another Machine? [y or n]");
+                do
+                {
+                    cki = Console.ReadKey(true);
+                    result = cki.KeyChar.ToString();
+                    valid = ValidateYorN(result);
+                } while (!valid);
+                if (result.ToLower() == "n")
+                {
+                    cont = true;
+                }
+            } while (!cont);
+            Console.WriteLine($"{"ID",-7}|{"Name",-50}|Still Supported");
+            Console.WriteLine("--------------------------------------------------");
+            using (var context = new MachineContext())
+            {
+                List<OperatingSys> lOperatingSystems = context.OperatingSys.ToList();
+                foreach (OperatingSys os in lOperatingSystems)
+                {
+                    Console.WriteLine($"{os.OperatingSysId,-7}|{os.Name,-50}| { os.StillSupported}");
+                }
+            }
+            Console.WriteLine("\r\nEnter the ID of the Operating System you want to Update to.");
+            Console.WriteLine("Then hit the Enter Key");
+            string newOs = GetNumbersFromConsole();
+            newOsId = Convert.ToInt16(newOs);
+            using (MachineContext context = new MachineContext())
+            {
+                foreach (Machine m in lMachines)
+                {
+                    m.OperatingSysId = newOsId;
+                    context.Update(m);
+                }
+                context.SaveChanges();
+            }
+
+        }
+
+        static Machine GetMachine()
+        {
+            Machine machine;
+            List<Machine> lMachine = GetListOfMachines();
+            Console.WriteLine("Machine ID | Machine Name");
+            foreach (Machine m in lMachine)
+            {
+                Console.WriteLine($"{m.MachineId,-11}| {m.Name}");
+            }
+            Console.WriteLine("\r\nEnter the ID of the Machine you want then hit the Enter Key");
+            int mId = Convert.ToInt16(GetNumbersFromConsole());
+            machine = lMachine.Where(x => x.MachineId == mId).FirstOrDefault();
+            return machine;
+        }
         static void DataEntryMenu()
         {
             ConsoleKeyInfo cki;
@@ -88,6 +172,7 @@ namespace ComputerInventory
                 Console.WriteLine("1. Add a New Machine");
                 Console.WriteLine("2. Add a New Operating System");
                 Console.WriteLine("3. Add a New Warranty Provider");
+                Console.WriteLine("4. Add New Machine Warranty Information");
                 Console.WriteLine("9. Exit Menu");
                 cki = Console.ReadKey();
                 try
@@ -106,6 +191,10 @@ namespace ComputerInventory
                         WarrantyProvider wp = new WarrantyProvider();
                         wp = CreateNewWarrantyProvider();
                         AddNewWarrantyProvider(wp);
+                    }
+                    else if (result == 4)
+                    {
+                        AddMachineWarrantyInfo();
                     }
                     else if (result == 9)
                     {
@@ -151,7 +240,8 @@ namespace ComputerInventory
                         machineType = AddMachineType();
                         cont = true;
                     }
-                    else {
+                    else
+                    {
                         if (char.IsNumber(cki.KeyChar))
                         {
                             int idEntered = Convert.ToInt16(cki.KeyChar.ToString());
@@ -162,8 +252,8 @@ namespace ComputerInventory
                             }
                             else
                             {
-                               // No match, add a counter
-                               // add in some error handling code.
+                                // No match, add a counter
+                                // add in some error handling code.
                             }
                         }
                     }
@@ -184,7 +274,7 @@ namespace ComputerInventory
             machine.InstalledRoles = Console.ReadLine();
 
             //Now we need to get the operating system
-            Console.WriteLine($"\r\n {"ID", -7}|{"Name", -50}|StillSupported");
+            Console.WriteLine($"\r\n {"ID",-7}|{"Name",-50}|StillSupported");
             Console.WriteLine("---------------------------------------------");
             using (var context = new MachineContext())
             {
@@ -197,7 +287,7 @@ namespace ComputerInventory
             Console.WriteLine("\r\nEnter the ID of the Operating System you wish to use.");
             Console.WriteLine("If you need to add an Operating System hit the 'a' key.");
             Console.WriteLine("When you are done hit the Enter Key.");
-            
+
             string id = string.Empty;
             cont = false;
             do
@@ -242,7 +332,8 @@ namespace ComputerInventory
                         // at the 0 position, can't go any further back.
                     }
                 }
-                else {
+                else
+                {
                     if (char.IsNumber(cki.KeyChar))
                     {
                         id += cki.KeyChar.ToString();
@@ -380,7 +471,7 @@ namespace ComputerInventory
             {
                 Console.WriteLine($"ID: {mt.MachineTypeId} Description:{mt.Description}");
             }
-           
+
         }
 
 
@@ -388,7 +479,7 @@ namespace ComputerInventory
         static void WriteHeader(string headerText)
         {
             Console.WriteLine(string.Format("{0," + ((Console.WindowWidth / 2) +
-headerText.Length / 2) + "}", headerText));
+    headerText.Length / 2) + "}", headerText));
 
         }
         static bool ValidateYorN(string entry)
@@ -654,6 +745,7 @@ headerText.Length / 2) + "}", headerText));
                 Console.WriteLine("1. Delete Operating System");
                 Console.WriteLine("2. Modify Operating System");
                 Console.WriteLine("3. Delete All Unsupported Operating Systems");
+                Console.WriteLine("4. Update Machine Information");
                 Console.WriteLine("9. Exit Menu");
                 cki = Console.ReadKey();
                 try
@@ -671,6 +763,10 @@ headerText.Length / 2) + "}", headerText));
                     else if (result == 3)
                     {
                         DeleteAllUnsupportedOperatingSystems();
+                    }
+                    else if (result == 4)
+                    {
+                        UpdateMachineDetails();
                     }
                     else if (result == 9)
                     {
@@ -875,102 +971,7 @@ headerText.Length / 2) + "}", headerText));
                 context.SaveChanges();
             }
         }
-        static WarrantyProvider CreateNewWarrantyProvider()
-        {
-            string provider = string.Empty;
-            string phoneNumber = string.Empty;
-            int? extension = null;
-            ConsoleKeyInfo cki;
-            bool cont = false;
-            Console.Clear();
-            WriteHeader("Add new Warranty Provider");
-            Console.WriteLine("\r\n\r\n Please enter the name of the Provider and then hit Enter");
-            provider = Console.ReadLine();
-            Console.WriteLine("\r\n Please enter the Providers phone number");
-            do
-            {
-                cki = Console.ReadKey(true);
-                if (cki.Key == ConsoleKey.Enter)
-                {
-                    if (phoneNumber.Length >= 7)
-                    {
-                        cont = true;
-                    }
-                    else
-                    {
-                        Console.WriteLine("Please enter a Phone number that is at least 7 digits.");
-                    }
-                }
-                else if (cki.Key == ConsoleKey.Backspace)
-                { Console.Write("\b \b"); 
-                try
-                {
-                    phoneNumber = phoneNumber.Substring(0, phoneNumber.Length - 1);
-                }
-                catch (System.ArgumentOutOfRangeException)
-                {
 
-                    // at  0 position it cannot go back
-                }
-                }
-                else
-                {
-                    if(char.IsNumber(cki.KeyChar))
-                    {
-                        phoneNumber += cki.KeyChar.ToString();
-                        Console.WriteLine(cki.KeyChar.ToString());
-                    }
-                }
-            } while (!cont);
-            cont = false;
-            Console.WriteLine("\r\nPlease enter the Providers extension.\r\nIf there is no extension hit ESC or Enter to continue.");
-            string tempExt = string.Empty;
-            do
-            {
-                cki = Console.ReadKey(true);
-                if (cki.Key == ConsoleKey.Escape)
-                {
-                    cont = true;
-                    extension = null;
-                }
-                else if (cki.Key == ConsoleKey.Enter)
-                {
-                    // can be any length or null
-                    if (tempExt.Length > 0)
-                        extension = Convert.ToInt32(tempExt);
-                    else
-                        extension = null;
-                    cont = true;
-                }
-                else if (cki.Key == ConsoleKey.Backspace)
-                {
-                    Console.Write("\b \b");
-                    try
-                    {
-                        tempExt = tempExt.Substring(0, tempExt.Length - 1);
-                    }
-                    catch (System.ArgumentOutOfRangeException)
-                    {
-                        // at the 0 position, can't go any further back
-                    }
-                }
-                else
-                {
-                    if (char.IsNumber(cki.KeyChar))
-                    {
-                        tempExt += cki.KeyChar.ToString();
-                        Console.Write(cki.KeyChar.ToString());
-                    }
-                }
-            } while (!cont);
-            WarrantyProvider wp = new WarrantyProvider()
-            {
-                ProviderName = provider,
-                SupportNumber = phoneNumber,
-                SupportExtension = extension
-            };
-            return wp;
-        }
         static void AddNewWarrantyProvider(WarrantyProvider wp)
         {
             bool cont = false;
@@ -1075,7 +1076,7 @@ headerText.Length / 2) + "}", headerText));
             DateTime warrantyExp;
             do
             {
-                Console.WriteLine("Enter the date the warranty expires[mm / dd / yyyy].");
+                Console.WriteLine("Enter the date the warranty expires[dd / mm / yyyy].");
                 tDate = Console.ReadLine();
                 if (DateTime.TryParse(tDate, out warrantyExp))
                 {
@@ -1095,12 +1096,819 @@ headerText.Length / 2) + "}", headerText));
             foreach (WarrantyProvider wp in lWarrantyProvider)
             {
                 Console.WriteLine($"ID: {wp.WarrantyProviderId} Name: {wp.ProviderName}");
-}
-    }
-
-        private static List<Machine> GetListOfMachines()
-        {
-            throw new NotImplementedException();
+            }
+            machineWarranty.ServiceTag = serviceTag;
+            machineWarranty.WarrantyExpiration = warrantyExp;
+            machineWarranty.MachineId = machineId;
+            Console.WriteLine("Enter the ID for the Warranty Provider you would like to use.");
+            Console.WriteLine("To add a new Provider enter [a]");
+            string tempProviderId = string.Empty;
+            cont = false;
+            do
+            {
+                cki = Console.ReadKey(true);
+                if (cki.Key == ConsoleKey.A)
+                {
+                    cont = true;
+                    warrantyProvider = CreateNewWarrantyProvider();
+                    machineWarranty.WarrantyProvider = warrantyProvider;
+                }
+                else if (cki.Key == ConsoleKey.Enter)
+                {
+                    if (tempProviderId.Length > 0)
+                    {
+                        int provID = Convert.ToInt32(tempProviderId);
+                        if (lWarrantyProvider.Exists(x => x.WarrantyProviderId ==
+                        provID))
+                        {
+                            warrantyProvider = lWarrantyProvider.Find(x =>
+                            x.WarrantyProviderId == provID);
+                            machineWarranty.WarrantyProviderId = provID;
+                            cont = true;
+                        }
+                        else
+                        {
+                            Console.WriteLine("No match please verify your entry and try again!");
+                        }
+                    }
+                    else
+                    {
+                        Console.WriteLine("Please enter an ID that is at least 1 digit.");
+                    }
+                }
+                else if (cki.Key == ConsoleKey.Backspace)
+                {
+                    Console.Write("\b \b");
+                    try
+                    {
+                        tempProviderId = tempProviderId.Substring(0, tempProviderId.
+                        Length - 1);
+                    }
+                    catch (System.ArgumentOutOfRangeException)
+                    {
+                        // at the 0 position, can't go any further back
+                    }
+                }
+                else
+                {
+                    if (char.IsNumber(cki.KeyChar))
+                    {
+                        tempProviderId += cki.KeyChar.ToString();
+                        Console.Write(cki.KeyChar.ToString());
+                    }
+                }
+            } while (!cont);
+            Console.Clear();
+            WriteHeader("Add Warranty Info To an Existing Machine");
+            Console.WriteLine("You have entered the following:");
+            Console.WriteLine($"Machine: {machine.Name}");
+            Console.WriteLine($"Service Tag: {machineWarranty.ServiceTag}");
+            Console.WriteLine($"Warranty Expiration: {machineWarranty.WarrantyExpiration.ToShortDateString()}");
+            Console.WriteLine($"Warranty Provider: {warrantyProvider.ProviderName}");
+            Console.WriteLine("\r\nIs this information correct? [y or n]");
+            string result;
+            do
+            {
+                cki = Console.ReadKey(true);
+                result = cki.KeyChar.ToString();
+                cont = ValidateYorN(result);
+            } while (!cont);
+            Console.WriteLine();
+            if (result.ToLower() == "y")
+            {
+                Console.WriteLine("Saving Machine Warranty Information");
+                using (MachineContext context = new MachineContext())
+                {
+                    context.MachineWarranty.Add(machineWarranty);
+                    context.SaveChanges();
+                    Console.WriteLine("Save complete!");
+                }
+            }
+            Console.WriteLine("Any key to continue...");
+            Console.ReadKey();
         }
+
+
+
+        static List<Machine> GetListOfMachines()
+        {
+            List<Machine> lmachine = new List<Machine>();
+            MachineContext context = new MachineContext();
+            lmachine = context.Machine.ToList();
+            context.Dispose();
+            return lmachine;
+        }
+
+
+        static WarrantyProvider CreateNewWarrantyProvider()
+        {
+            string provider = string.Empty;
+            string phoneNumber = string.Empty;
+            int? extension = null;
+            ConsoleKeyInfo cki;
+            bool cont = false;
+            Console.Clear();
+            WriteHeader("Add new Warranty Provider");
+            Console.WriteLine("\r\n\r\nPlease enter the name of the Provider and then hit Enter.");
+            provider = Console.ReadLine();
+
+            Console.WriteLine("\r\nPlease enter the Providers phone number.");
+            do
+            {
+                cki = Console.ReadKey(true);
+                if (cki.Key == ConsoleKey.Enter)
+                {
+                    if (phoneNumber.Length >= 7)
+                    {
+                        cont = true;
+                    }
+                    else
+                    {
+                        Console.WriteLine("Please enter a Phone number that is at least 7 digits.");
+                    }
+                }
+                else if (cki.Key == ConsoleKey.Backspace)
+                {
+                    Console.Write("\b \b");
+                    try
+                    {
+                        phoneNumber = phoneNumber.Substring(0, phoneNumber.Length - 1);
+                    }
+                    catch (System.ArgumentOutOfRangeException)
+                    {
+                        // at the 0 position, can't go any further back
+                    }
+                }
+                else
+                {
+                    if (char.IsNumber(cki.KeyChar))
+                    {
+                        phoneNumber += cki.KeyChar.ToString();
+                        Console.Write(cki.KeyChar.ToString());
+                    }
+                }
+
+            } while (!cont);
+
+            cont = false;
+            Console.WriteLine("\r\nPlease enter the Providers extension.\r\nIf there is no extension hit ESC or Enter to continue.");
+            string tempExt = string.Empty;
+            do
+            {
+                cki = Console.ReadKey(true);
+                if (cki.Key == ConsoleKey.Escape)
+                {
+                    cont = true;
+                    extension = null;
+                }
+                else if (cki.Key == ConsoleKey.Enter)
+                {
+                    // can be any length or null
+                    if (tempExt.Length > 0)
+                        extension = Convert.ToInt32(tempExt);
+                    else
+                        extension = null;
+                    cont = true;
+                }
+                else if (cki.Key == ConsoleKey.Backspace)
+                {
+                    Console.Write("\b \b");
+                    try
+                    {
+                        tempExt = tempExt.Substring(0, tempExt.Length - 1);
+                    }
+                    catch (System.ArgumentOutOfRangeException)
+                    {
+                        // at the 0 position, can't go any further back
+                    }
+                }
+                else
+                {
+                    if (char.IsNumber(cki.KeyChar))
+                    {
+                        tempExt += cki.KeyChar.ToString();
+                        Console.Write(cki.KeyChar.ToString());
+                    }
+                }
+            } while (!cont);
+
+            WarrantyProvider wp = new WarrantyProvider()
+            {
+                ProviderName = provider,
+                SupportNumber = phoneNumber,
+                SupportExtension = extension
+            };
+            return wp;
+        }
+
+        static string DisplayAllMachines()
+        {
+            Console.Clear();
+            List<Machine> lMachine = GetListOfMachines();
+            foreach (Machine m in lMachine)
+            {
+                Console.WriteLine($"{m.MachineId,-11}| {m.Name}");
+            }
+            Console.WriteLine("\r\nEnter the MachineId followed by the Enter Key for more information.");
+            Console.WriteLine("Hit the Esc key at anytime to exit the menu.");
+            string machineId = GetNumbersFromConsole();
+            int machId = 0;
+            if (machineId.Length > 0)
+            {
+                machId = Convert.ToInt32(machineId);
+                //DisplayMachineDetail(machId);
+
+            }
+            return machId.ToString();
+        }
+
+        static string GetNumbersFromConsole()
+        {
+            ConsoleKeyInfo cki;
+            bool cont = false;
+            string numbers = string.Empty;
+            do
+            {
+                cki = Console.ReadKey(true);
+                if (cki.Key == ConsoleKey.Escape)
+                {
+                    cont = true;
+                    numbers = "";
+                }
+                else if (cki.Key == ConsoleKey.Enter)
+                {
+                    if (numbers.Length > 0)
+                    {
+                        cont = true;
+                    }
+                    else
+                    {
+                        Console.WriteLine("Please enter an ID that is at least 1 digit.");
+                    }
+                }
+                else if (cki.Key == ConsoleKey.Backspace)
+                {
+                    Console.Write("\b \b");
+                    try
+                    {
+                        numbers = numbers.Substring(0, numbers.Length - 1);
+                    }
+                    catch (System.ArgumentOutOfRangeException)
+                    {
+                        // at the 0 position, can't go any further back
+                    }
+                }
+                else
+                {
+                    if (char.IsNumber(cki.KeyChar))
+                    {
+                        numbers += cki.KeyChar.ToString();
+                        Console.Write(cki.KeyChar.ToString());
+                    }
+                }
+            } while (!cont);
+            return numbers;
+        }
+
+        static void DisplayMachineDetail(int machineId)
+        {
+            Console.Clear();
+            Console.WriteLine("\r\nRetrieving information about our machine. ");
+            using (MachineContext context = new MachineContext())
+            {
+                var mach = (from mac in context.Machine
+                            join mw in context.MachineWarranty on mac.MachineId equals
+                            mw.MachineId
+                            where mac.MachineId == machineId
+                            select new
+                            {
+                                mac.Name,
+                                MacType = mac.MachineType.Description,
+                                osName = mac.OperatingSys.Name,
+                                mac.OperatingSys.StillSupported,
+                                mw.WarrantyProvider,
+                                mw.WarrantyExpiration,
+                                mac.MachineType.Description
+                            }).FirstOrDefault();
+
+                if (mach != null)
+                {
+                    Console.WriteLine($"Machine: {mach.Name} is a {mach.Description} \r\nOS = { mach.osName}  " +
+                        $"Still Supported?: { mach.StillSupported} "); Console.WriteLine($"Warranty Provider =" +
+                        $" {mach.WarrantyProvider.ProviderName} Support Ends on:{mach.WarrantyExpiration.ToShortDateString()}");
+                }
+                else
+                {
+                    Console.WriteLine($"No Machine Found with ID: {machineId}");
+                }
+            }
+            Console.WriteLine("Hit any key to continue");
+            Console.ReadKey();
+        }
+
+        // Method to update Machine Details
+
+        static void UpdateMachineDetails()
+        {
+            Console.Clear();
+            List<Machine> lMachine = GetListOfMachines();
+            WriteHeader("Update Machine Details");
+
+            string machineId = DisplayAllMachines();
+            if (machineId.Length > 0)
+            {
+                int mId = Convert.ToInt32(machineId);
+                Machine mach;
+                MachineWarranty mWar;
+                using (MachineContext context = new MachineContext())
+                {
+                    mach = context.Machine.Include(o => o.OperatingSys).Include(t => t.MachineType).Where(x => x.MachineId == mId).FirstOrDefault();
+
+                    mWar = context.MachineWarranty.Include(p => p.WarrantyProvider).Where(x => x.MachineId == mach.MachineId).FirstOrDefault();
+                }
+
+                //Console.Clear();
+                //Console.WriteLine("To Update the Machine Information Press 1");
+                //Console.WriteLine($"Name: {mach.Name} General Role: {mach.GeneralRole}");
+                //Console.WriteLine($" Installed Role: {mach.InstalledRoles}");
+                //Console.WriteLine("\r\n To Update the Operating System Information Press 2");
+                //Console.WriteLine($"OS Name: {mach.OperatingSys.Name} StillSupported: { mach.OperatingSys.StillSupported}");
+                //Console.WriteLine($"\r\nTo Update the Machine Type Press 3");
+                //Console.WriteLine($"Machine Type: {mach.MachineType.Description}");
+                //Console.WriteLine($"\r\nTo Update the Warranty Information Press 4");
+                //Console.WriteLine($"Provider Name: {mWar.WarrantyProvider.ProviderName}");
+                //Console.WriteLine($"Expiration: {mWar.WarrantyExpiration.ToShortDateString()}");
+
+                UpdateMachine(mach.MachineId);
+
+            }
+            //Console.ReadKey();
+        }
+        static char CheckForYorN(bool intercept)
+        {
+            ConsoleKeyInfo cki;
+            char entry;
+            bool cont = false;
+            do
+            {
+                cki = Console.ReadKey(intercept);
+                entry = cki.KeyChar;
+                cont = ValidateYorN(entry.ToString());
+            } while (!cont);
+            return entry;
+        }
+
+        static string GetTextFromConsole(int minLength, bool allowEscape = false)
+        {
+            ConsoleKeyInfo cki;
+            bool cont = false;
+            string rtnValue = string.Empty;
+            do
+            {
+                cki = Console.ReadKey(true);
+                if (cki.Key == ConsoleKey.Escape)
+                {
+                    if (allowEscape)
+                    {
+                        cont = true;
+                        rtnValue = "";
+                    }
+                }
+                else if (cki.Key == ConsoleKey.Enter)
+                {
+                    if (rtnValue.Length >= minLength)
+                    {
+                        cont = true;
+                    }
+                    else
+                    {
+                        Console.WriteLine($"Please enter least {minLength} characters.");
+                    }
+                }
+                else if (cki.Key == ConsoleKey.Backspace)
+                {
+                    Console.Write("\b \b");
+                    try
+                    {
+                        rtnValue = rtnValue.Substring(0, rtnValue.Length - 1);
+                    }
+                    catch (System.ArgumentOutOfRangeException)
+                    {
+                        // at the 0 position, can't go any further back
+                    }
+                }
+                else
+                {
+                    rtnValue += cki.KeyChar.ToString();
+                    Console.Write(cki.KeyChar.ToString());
+                }
+            } while (!cont);
+            return rtnValue;
+        }
+
+        // Update machine 
+
+        static void UpdateMachine(int machineId)
+        {
+            Console.Clear();
+            char response;
+            using (MachineContext context = new MachineContext())
+            {
+                Machine machine = context.Machine.Where(x => x.MachineId == machineId).FirstOrDefault();
+                if (machine != null)
+                {
+                    Console.WriteLine($"Machine Name: { machine.Name} \r\nDo you wish to change it? ");
+                }
+                response = CheckForYorN(true);
+                if (response == 'y')
+                {
+                    Console.WriteLine("Enter a new machine name and hit Enter to continue");
+                    machine.Name = GetTextFromConsole(3);
+
+                }
+                Console.WriteLine($"General Role: {machine.GeneralRole} \r\nDo you wish to change it?");
+                response = CheckForYorN(true);
+                if (response == 'y')
+                {
+                    Console.WriteLine("Enter a new General Role For the Machine and then hit Enter to continue");
+                    machine.GeneralRole = GetTextFromConsole(5);
+                }
+                Console.WriteLine($"Installed Roles: {machine.InstalledRoles}\r\nDo you wish to change it ? ");
+                response = CheckForYorN(true);
+                if (response == 'y')
+                {
+                    Console.WriteLine("Enter a new listing of Installed Roles For the Machine and then hit Enter to continue");
+                    Console.WriteLine("You can hit Esc to exit without making any changes");
+                    string result = GetTextFromConsole(5, true);
+                    if (result.Length >= 5)
+                    {
+                        machine.InstalledRoles = result;
+                    }
+
+                }
+                if (context.ChangeTracker.HasChanges())
+                {
+                    Console.WriteLine("\r\nSaving changes!");
+                    context.SaveChanges();
+                }
+                else
+                {
+                    Console.WriteLine("\r\nNo Changes...");
+                }
+            }
+            Console.WriteLine("Hit any key to continue...");
+            Console.ReadKey();
+        }
+
+
+
+        static void DisplaySpecificMachineData()
+        {
+            using (var context = new MachineContext())
+            {
+                var machines = (from m in context.Machine
+                                join o in context.OperatingSys on m.OperatingSysId equals o.OperatingSysId
+                                where m.MachineTypeId == 1
+                                select new { MachineName = m.Name, Role = m.GeneralRole, OperatingSystem = o.Name });
+                foreach (var m in machines)
+                {
+                    Console.WriteLine($"{m.MachineName} {m.OperatingSystem} {m.Role}");
+                }
+            }
+        }
+
+        static void DisplaySpecificMachineData2()
+        {
+            using (var context = new MachineContext())
+            {
+                var machines = (from m in context.Machine
+                                join o in context.OperatingSys on m.OperatingSysId equals
+                                o.OperatingSysId
+
+
+                                select new { m.Name, m.GeneralRole, OperatingSystem = o.Name });
+                foreach (var m in machines)
+                {
+                    Console.WriteLine($"{m.Name} {m.OperatingSystem} { m.GeneralRole} ");
+                }
+            }
+        }
+
+        static void DisplayMachineNameAndIdOnly()
+        {
+            using (var context = new MachineContext())
+            {
+                var machines = (from m in context.Machine
+                                where m.MachineTypeId == 1
+                                select new { m.MachineId, m.Name });
+                foreach (var m in machines)
+                {
+                    Console.WriteLine($"{m.MachineId} {m.Name}");
+                }
+            }
+        }
+
+
+        static void LeftOuterJoin()
+        {
+            using (var context = new MachineContext())
+            {
+                var leftJoin = from M in context.Machine
+                               join MW in context.MachineWarranty on M.MachineId equals MW.MachineId into lJoin
+                               from MW in lJoin.DefaultIfEmpty()
+                               select new { machineId = M.MachineId, machineName = M.Name, providerId = MW != null ? MW.WarrantyProviderId : (int?)null };
+
+                foreach (var lj in leftJoin)
+                {
+                    string pId;
+                    if (lj.providerId == null) { pId = "null"; }
+                    else { pId = lj.providerId.ToString(); }
+
+                    Console.WriteLine($"{lj.machineId} {lj.machineName} {pId}");
+                }
+            }
+        }
+
+        static void RightOuterJoin()
+        {
+            using (var context = new MachineContext())
+            {
+                var dataBaseConnection = context.Database.GetDbConnection();
+                dataBaseConnection.Open();
+                using (var cmd = dataBaseConnection.CreateCommand())
+                {
+                    string eSQL = "Select MW.MachineID, M.Name, MW.WarrantyProviderID, " +
+                        "mw.WarrantyExpiration FROM MachineWarranty AS MW RIGHT OUTER JOIN Machine " +
+                        "AS M on MW.MachineID = M.MachineID";
+                    cmd.CommandText = eSQL;
+                    DbDataReader reader = cmd.ExecuteReader();
+
+                    if (reader.HasRows)
+                    {
+                        while (reader.Read())
+                        {
+                            string mId;
+                            if (reader.IsDBNull(0)) { mId = "Null"; }
+                            else { mId = reader.GetInt32(0).ToString(); }
+
+                            string machineName = reader.GetString(1);
+
+                            string warrantyProviderId;
+
+                            if (reader.IsDBNull(2)) { warrantyProviderId = "Null"; }
+                            else { warrantyProviderId = reader.GetInt32(2).ToString(); }
+
+                            string warrantyExpiration;
+                            if (reader.IsDBNull(3)) { warrantyExpiration = "Null"; }
+                            else { warrantyExpiration = reader.GetDateTime(3).ToShortDateString(); }
+
+                            Console.WriteLine($"{mId} {machineName} {warrantyProviderId} { warrantyExpiration}");
+                        }
+                    }
+                    dataBaseConnection.Close();
+                }
+                Console.WriteLine();
+                var rightJoin = from mw in context.MachineWarranty
+                                join m in context.Machine on mw.MachineId equals m.MachineId into rjoin
+                                from m in rjoin.DefaultIfEmpty()
+                                select new
+                                {
+                                    machineId = m != null ? m.MachineId : (int?)null,
+                                    machineName = m.Name,
+                                    warrantyProviderId = mw != null ? mw.WarrantyProviderId : (int?)null,
+                                    warrantyExpiration = mw != null ? mw.WarrantyExpiration : (DateTime?)null
+                                };
+
+                foreach (var rj in rightJoin)
+                {
+                    string mId;
+                    string machineName;
+                    string warrProv;
+                    string warrExp;
+                    machineName = rj.machineName;
+                    if (rj.machineId == null) { mId = "null"; }
+                    else { mId = rj.machineId.ToString(); }
+                    if (rj.warrantyProviderId == null) { warrProv = "null"; }
+                    else { warrProv = rj.warrantyProviderId.ToString(); }
+                    if (rj.warrantyExpiration == null) { warrExp = "null"; }
+                    else { warrExp = rj.warrantyExpiration.ToString(); }
+                    Console.WriteLine(value: $"{mId} {machineName} {warrProv} { warrExp} ");
+                }
+            }
+        }
+
+        static void CrossJoin()
+        {
+            using (var _context = new MachineContext())
+            {
+                var CrossJoin = from m in _context.Machine from n in _context.MachineWarranty select new { m, n };
+
+                int counter = 1;
+                foreach (var cj in CrossJoin)
+                {
+                    Console.WriteLine($"Row: {counter++}\t{ cj.m.MachineId}  { cj.m.Name}{ cj.n.WarrantyProviderId}{ cj.n.WarrantyExpiration} ");
+                }
+            }
+        }
+
+
+        static void InnerJoinMS()
+        {
+            using (var context = new MachineContext())
+            {
+                var mw = context.MachineWarranty.Join(context.WarrantyProvider, m => m.WarrantyProviderId, p => p.WarrantyProviderId, (m, p) => new
+                {
+                    machineId = m.MachineId,
+                    warrantyProvider = p.ProviderName,
+                    warrantyExpiration = m.WarrantyExpiration,
+                    supportNumber = p.SupportNumber
+                });
+
+                foreach (var m in mw)
+                {
+                    Console.WriteLine($"MachineID: {m.machineId} Warranty Provider: { m.warrantyProvider}");
+                    Console.WriteLine($"Warranty Expiration: {m.warrantyExpiration.ToShortDateString()} Support Number: { m.supportNumber}");
+                    Console.WriteLine("----------------------------------------");
+                }
+            }
+        }
+
+        static void GroupMachinesByOS()
+        {
+            using (var context = new MachineContext())
+            {
+                var mli = from m in context.Machine
+                          join o in context.OperatingSys on m.OperatingSysId equals o.OperatingSysId
+                          group new { m, o } by m.OperatingSysId into grouped
+                          select new
+                          {
+                              grouped.Key,
+                              count = grouped.Select(x => x.m.OperatingSysId).Count(),
+                              Name = grouped.Select(ma => ma.o.Name)
+                          };
+
+                foreach (var m in mli)
+                {
+                    Console.WriteLine($"OS ID: {m.Key} Machine Count W/OS: {m.count} OS Name: { m.Name.ElementAt(0)} ");
+                }
+                {
+
+                }
+            }
+        }
+
+        static void GroupMachineByType()
+        {
+            using (var context = new MachineContext())
+            {
+                //var mt = from m in context.Machine
+                //         join o in context.MachineType on m.MachineTypeId equals o.MachineTypeId
+                //         group new { m, o } by o.MachineTypeId into grouped
+                //         select new
+                //         {
+                //             grouped.Key,
+                //             count = grouped.Select(x => x.m.MachineTypeId).Count()
+                //         };
+
+                var mt = context.Machine.GroupBy(m => m.MachineTypeId).Select(g => new { id = g.Key, count = g.Count() });
+
+                foreach (var m in mt)
+
+                {
+                    Console.WriteLine($"{m.id} {m.count}");
+                }
+            }
+        }
+
+        static void LogicalAnd()
+        {
+            using (var context = new MachineContext())
+            {
+                DateTime start = DateTime.Now;
+                var Los = from m in context.Machine
+                          join o in context.OperatingSys on m.OperatingSysId equals o.OperatingSysId
+                          group new { m, o } by m.OperatingSysId into grouped
+                          select new { grouped.Key, count = grouped.Select(x => x.m.OperatingSysId).Count(), Name = grouped.Select(ma => ma.o.Name) };
+                foreach (var m in Los)
+                {
+                    List<Machine> lMachine = context.Machine.Where(x => x.MachineTypeId == 1 || x.OperatingSysId == m.Key).ToList();
+                    if (lMachine.Count > 0)
+                    {
+                        Console.WriteLine($"Servers Running {m.Name.ElementAt(0)}");
+                        foreach (Machine machine in lMachine)
+                        {
+                            Console.WriteLine($"\tName: {machine.Name}\tRole: {machine.GeneralRole}");
+                        }
+                    }
+                    Console.WriteLine();
+                }
+
+
+                DateTime end = DateTime.Now;
+                TimeSpan ts = end.Subtract(start);
+                Console.WriteLine($"It took {ts.Milliseconds} ms to run");
+                start = DateTime.Now;
+                Console.WriteLine("Using a where clause for the same results...");
+                var lOs2 = (from m in context.Machine
+                            join o in context.OperatingSys on m.OperatingSysId equals
+                            o.OperatingSysId
+                            where m.MachineTypeId == 1
+                            group new { m, o } by m.OperatingSysId into grouped
+                            select new
+                            {
+                                grouped.Key,
+                                count = grouped.Select(x =>
+      x.m.OperatingSysId).Count(),
+                                Name = grouped.Select(ma =>
+    ma.o.Name)
+                            });
+                foreach (var os in lOs2)
+                {
+                    List<Machine> lMachine = context.Machine.Where(x =>
+                    x.OperatingSysId == os.Key).ToList();
+                    if (lMachine.Count > 0)
+                    {
+                        Console.WriteLine($"Servers Running {os.Name.ElementAt(0)}");
+                        foreach (Machine m in lMachine)
+                        {
+                            Console.WriteLine($"\tName: {m.Name}\tRole: { m.GeneralRole} ");
+                        }
+                        Console.WriteLine();
+                    }
+                }
+                end = DateTime.Now;
+                ts = end.Subtract(start);
+                Console.WriteLine($"It took {ts.Milliseconds} ms to run");
+            }
+        }
+
+        static void PageAndFilterOperatingSystems()
+        {
+            ConsoleKeyInfo cki;
+            string result;
+            bool cont = false;
+            System.Linq.Expressions.Expression<Func<OperatingSys, bool>> whereClause = o => o.StillSupported == true;
+            string pageOptions = "";
+            List<OperatingSys> lOperatingsys;
+            Console.Clear();
+            Console.WriteLine("Do you want to display all of the Operating Systems in one list? [y or n]");
+            do
+            {
+                cki = Console.ReadKey(true);
+                result = cki.KeyChar.ToString();
+                cont = ValidateYorN(result);
+            } while (!cont);
+
+            if (result.ToLower() == "y")
+            {
+                DisplayOperatingSystems();
+            }
+            else {
+                Console.WriteLine("Do you want to view [a]ll, [s]upported operating systems or [u]nsupported operating systems?");
+                cont = false;
+                do
+                {
+                    cki = Console.ReadKey(true);
+                    if (cki.Key == ConsoleKey.A || cki.Key == ConsoleKey.S || cki.Key == ConsoleKey.U)
+                    {
+                        result = cki.KeyChar.ToString();
+                        cont = true;
+                    }
+                } while (!cont);
+                if (result.ToLower() == "a")
+                {
+                    whereClause = o => o.StillSupported == true || o.StillSupported == false;
+                }
+                else if (result.ToLower() == "s")
+                {
+                    whereClause = o => o.StillSupported == true;
+                }
+                else if (result.ToLower() == "u")
+                {
+                    whereClause = o => o.StillSupported == false;
+                }
+
+                int pageSize;
+                int pageIndex = 0;
+                Console.WriteLine("How many results do you want per page, enter a number between 3 and 5");
+                cont = false;
+            }
+
+        }
+
     }
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
