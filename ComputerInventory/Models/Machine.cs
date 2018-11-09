@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -17,6 +18,7 @@ namespace ComputerInventory.Models
         public string Name { get; set; }
         public string GeneralRole { get; set; }
         public string InstalledRoles { get; set; }
+        [ConcurrencyCheck]
         public int OperatingSysId { get; set; }
         public int MachineTypeId { get; set; }
         public MachineType MachineType { get; set; }

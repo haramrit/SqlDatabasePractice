@@ -213,6 +213,8 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="BasicValidation.cs" />
+    <Compile Include="ConsoleHelper.cs" />
     <Compile Include="Data\MachineContext.cs" />
     <Compile Include="Migrations\20181022231425_m1.cs" />
     <Compile Include="Migrations\20181022231425_m1.designer.cs">
@@ -226,8 +228,10 @@
     <Compile Include="Models\SupportLog.cs" />
     <Compile Include="Models\SupportTicket.cs" />
     <Compile Include="Models\WarrantyProvider.cs" />
+    <Compile Include="ModelValidation.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="SupportTicketLogEntry.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />

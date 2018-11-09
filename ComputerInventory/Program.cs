@@ -7,13 +7,16 @@ using Microsoft.EntityFrameworkCore;
 using ComputerInventory.Models;
 using ComputerInventory.Data;
 using System.Data.Common;
+using System.ComponentModel.DataAnnotations;
+
 
 namespace ComputerInventory
 {
     class Program
     {
-        static void Main(string[] args)
+        public static void Main(string[] args)
         {
+            ConsoleHelper consoleHelper = new ConsoleHelper();
             // Set a color you like other than green or red as this will be used later 
             Console.ForegroundColor = ConsoleColor.White;
             int result = -1;
@@ -30,15 +33,15 @@ namespace ComputerInventory
             do
             {
                 Console.Clear();
-                WriteHeader("Welcome to Newbie Data Systems");
-                WriteHeader("Main Menu");
+                ConsoleHelper.WriteHeader("Welcome to Newbie Data Systems");
+                ConsoleHelper.WriteHeader("Main Menu");
                 Console.WriteLine("\r\n Please Select from the list below for what you would like to do today");
                 Console.WriteLine("1. List All Machines in Inventory");
-                Console.WriteLine("2. List All Operating Systems");
+                Console.WriteLine("2. List Operating Systems");
                 Console.WriteLine("3. Data Entry Menu");
                 Console.WriteLine("4. Data Modification Menu");
                 Console.WriteLine("5. Update Operating Systems");
-                Console.WriteLine("6. Testing");
+                Console.WriteLine("6. Support Ticket and Log");
                 Console.WriteLine("9. Exit");
 
                 cki = Console.ReadKey();
@@ -51,8 +54,8 @@ namespace ComputerInventory
                     }
                     else if (result == 2)
                     {
-
-                        DisplayOperatingSystems();
+                        PageAndFilterOperatingSystems();
+                        //DisplayOperatingSystems();
                     }
                     else if (result == 3)
                     {
@@ -68,13 +71,14 @@ namespace ComputerInventory
                     }
                     else if (result == 6)
                     {
+                        SupportMenu();
                         //Console.WriteLine();
                         //DisplaySpecificMachineData();
-                        Console.WriteLine();
+                        //Console.WriteLine();
                         //LeftOuterJoin();
                         //RightOuterJoin();
-                        LogicalAnd();
-                        Console.ReadKey();
+                        //LogicalAnd();
+                        //Console.ReadKey();
                     }
                     else if (result == 9)
                     {
@@ -99,7 +103,7 @@ namespace ComputerInventory
             int newOsId = -1;
             bool valid = false;
             Console.Clear();
-            WriteHeader($"Operating System Update");
+            ConsoleHelper.WriteHeader($"Operating System Update");
             List<Machine> lMachines = new List<Machine>();
             bool cont = false;
             do
@@ -111,7 +115,7 @@ namespace ComputerInventory
                 {
                     cki = Console.ReadKey(true);
                     result = cki.KeyChar.ToString();
-                    valid = ValidateYorN(result);
+                    valid = ConsoleHelper.ValidateYorN(result);
                 } while (!valid);
                 if (result.ToLower() == "n")
                 {
@@ -130,7 +134,7 @@ namespace ComputerInventory
             }
             Console.WriteLine("\r\nEnter the ID of the Operating System you want to Update to.");
             Console.WriteLine("Then hit the Enter Key");
-            string newOs = GetNumbersFromConsole();
+            string newOs = ConsoleHelper.GetNumbersFromConsole();
             newOsId = Convert.ToInt16(newOs);
             using (MachineContext context = new MachineContext())
             {
@@ -139,9 +143,53 @@ namespace ComputerInventory
                     m.OperatingSysId = newOsId;
                     context.Update(m);
                 }
-                context.SaveChanges();
-            }
+                try
+                {
+                    context.SaveChanges();
 
+                }
+                catch (DbUpdateConcurrencyException ex)
+                {
+                    foreach (var e in ex.Entries)
+                    {
+                        if (e.Entity is Machine)
+                        {
+                            var dbEntity = context.Machine.AsNoTracking().Single(m1 =>
+                            m1.MachineId == ((Machine)e.Entity).MachineId);
+
+                            var dbEntry = context.Entry(dbEntity);
+
+                            foreach (var property in e.Metadata.GetProperties())
+                            {
+                                if (property.Name == "OperatingSysId")
+                                {
+                                    var proposedValue = e.Property(property.Name).CurrentValue;
+                                    var dbValue = dbEntry.Property(property.Name).CurrentValue;
+                                    Console.WriteLine("The value has been changed outside of program.");
+                                    OperatingSys osN = GetOperatingSystemById(Convert.ToInt32(dbValue));
+                                    Console.WriteLine($"The new value is {osN.Name}");
+                                    osN = GetOperatingSystemById(Convert.
+                                    ToInt32(proposedValue));
+                                    Console.WriteLine($"You entered {osN.Name}");
+                                    Console.WriteLine("Do you want to overwrite this change?[y or n]");
+                                    cki = Console.ReadKey(true);
+                                    result = cki.KeyChar.ToString();
+                                    if (result.ToLower() == "y")
+                                    {
+                                        e.Property(property.Name).OriginalValue =
+                                        dbEntry.Property(property.Name).CurrentValue;
+                                        //try again
+                                        context.SaveChanges();
+                                    }
+
+                                }
+                            }
+                        }
+
+                    }
+                }
+
+            }
         }
 
         static Machine GetMachine()
@@ -154,7 +202,7 @@ namespace ComputerInventory
                 Console.WriteLine($"{m.MachineId,-11}| {m.Name}");
             }
             Console.WriteLine("\r\nEnter the ID of the Machine you want then hit the Enter Key");
-            int mId = Convert.ToInt16(GetNumbersFromConsole());
+            int mId = Convert.ToInt16(ConsoleHelper.GetNumbersFromConsole());
             machine = lMachine.Where(x => x.MachineId == mId).FirstOrDefault();
             return machine;
         }
@@ -167,7 +215,7 @@ namespace ComputerInventory
             {
                 Console.Clear();
                 //SeedOperatingSystemTable();
-                WriteHeader("Data Entry Menu");
+                ConsoleHelper.WriteHeader("Data Entry Menu");
                 Console.WriteLine("\r\nPlease select from the list below for what you would like to do today");
                 Console.WriteLine("1. Add a New Machine");
                 Console.WriteLine("2. Add a New Operating System");
@@ -216,7 +264,7 @@ namespace ComputerInventory
             string result;
             bool cont = false;
             Machine machine = new Machine();
-            WriteHeader("Add New Machine");
+            ConsoleHelper.WriteHeader("Add New Machine");
             Console.WriteLine();
             List<MachineType> lMachineType = GetMachineTypes();
             MachineType machineType = new MachineType();
@@ -345,7 +393,7 @@ namespace ComputerInventory
             machine.OperatingSysId = os.OperatingSysId;
 
             Console.Clear();
-            WriteHeader("Add New Machine");
+            ConsoleHelper.WriteHeader("Add New Machine");
             Console.WriteLine("\r\nYou have entered the following:");
             Console.WriteLine($"\tName: {machine.Name}");
             Console.WriteLine($"\tType: {machineType.Description}");
@@ -358,7 +406,7 @@ namespace ComputerInventory
             {
                 cki = Console.ReadKey();
                 result = cki.KeyChar.ToString();
-                cont = ValidateYorN(result);
+                cont = ConsoleHelper.ValidateYorN(result);
             } while (!cont);
             if (result.ToLower() == "y")
             {
@@ -397,7 +445,7 @@ namespace ComputerInventory
             string mName = "";
             do
             {
-                WriteHeader("Add New Machine Type");
+                ConsoleHelper.WriteHeader("Add New Machine Type");
                 Console.WriteLine("Enter a Description for the Machine Type and hit Enter");
                 mName = Console.ReadLine();
                 if (mName.Length >= 6)
@@ -420,7 +468,7 @@ namespace ComputerInventory
                 Console.WriteLine($"You entered {mt.Description} as the Description.\r\nDo you wish to continue? [y or n]");
                 cki = Console.ReadKey();
                 result = cki.KeyChar.ToString();
-                cont = ValidateYorN(result);
+                cont = ConsoleHelper.ValidateYorN(result);
             } while (!cont);
 
             if (result.ToLower() == "y")
@@ -475,23 +523,6 @@ namespace ComputerInventory
         }
 
 
-        // Helper Method to write header in the centre of the screen.
-        static void WriteHeader(string headerText)
-        {
-            Console.WriteLine(string.Format("{0," + ((Console.WindowWidth / 2) +
-    headerText.Length / 2) + "}", headerText));
-
-        }
-        static bool ValidateYorN(string entry)
-        {
-            bool result = false;
-            if (entry.ToLower() == "y" || entry.ToLower() == "n")
-            {
-                result = true;
-            }
-            return result;
-        }
-
         static bool CheckForExistingOS(string osName)
         {
             bool exists = false;
@@ -516,7 +547,7 @@ namespace ComputerInventory
             string osName = "";
             do
             {
-                WriteHeader("Add New Operating System");
+                ConsoleHelper.WriteHeader("Add New Operating System");
                 Console.WriteLine("Enter the name of the operating system and hit enter");
                 osName = Console.ReadLine();
                 if (osName.Length >= 4)
@@ -537,7 +568,7 @@ namespace ComputerInventory
             {
                 cki = Console.ReadKey();
                 result = cki.KeyChar.ToString();
-                cont = ValidateYorN(result);
+                cont = ConsoleHelper.ValidateYorN(result);
 
             } while (!cont);
 
@@ -558,7 +589,7 @@ namespace ComputerInventory
                     $"you entered {os.StillSupported}.\r\n Do you wish to continue ? [y or n]");
                 cki = Console.ReadKey();
                 result = cki.KeyChar.ToString();
-                cont = ValidateYorN(result);
+                cont = ConsoleHelper.ValidateYorN(result);
 
             } while (!cont);
             if (result.ToLower() == "y")
@@ -625,7 +656,7 @@ namespace ComputerInventory
                 {
                     cki = Console.ReadKey(true);
                     result = cki.KeyChar.ToString();
-                    cont = ValidateYorN(result);
+                    cont = ConsoleHelper.ValidateYorN(result);
                 } while (!cont);
                 if ("y" == result.ToLower())
                 {
@@ -665,7 +696,7 @@ namespace ComputerInventory
         {
             ConsoleKeyInfo cki;
             Console.Clear();
-            WriteHeader($"{operation} an Existing  Operating System Entry");
+            ConsoleHelper.WriteHeader($"{operation} an Existing  Operating System Entry");
             Console.WriteLine($"{"ID",-7}|{"Name",-50}|Still Supported");
             Console.WriteLine("-------------------------------------- -----------");
             using (var context = new MachineContext())
@@ -740,7 +771,7 @@ namespace ComputerInventory
             do
             {
                 Console.Clear();
-                WriteHeader("Data Modification Menu");
+                ConsoleHelper.WriteHeader("Data Modification Menu");
                 Console.WriteLine("\r\n Please select from the list below for what you would like to do today");
                 Console.WriteLine("1. Delete Operating System");
                 Console.WriteLine("2. Modify Operating System");
@@ -804,7 +835,7 @@ namespace ComputerInventory
             char operation = '0';
             bool cont = false;
             ConsoleKeyInfo cki;
-            WriteHeader("Update Operating System");
+            ConsoleHelper.WriteHeader("Update Operating System");
             if (os != null)
             {
                 Console.WriteLine($"\r\nOS Name:{os.Name} Still Supported:{os.StillSupported}");
@@ -864,7 +895,7 @@ namespace ComputerInventory
                 {
                     cki = Console.ReadKey(true);
                     k = cki.KeyChar.ToString();
-                    cont = ValidateYorN(k);
+                    cont = ConsoleHelper.ValidateYorN(k);
                 } while (!cont);
                 if (k == "y")
                 {
@@ -986,7 +1017,7 @@ namespace ComputerInventory
             {
                 cki = Console.ReadKey(true);
                 result = cki.KeyChar.ToString();
-                cont = ValidateYorN(result);
+                cont = BasicValidation.ValidateYorN(result);
             } while (!cont);
             if (result.ToLower() == "y")
             {
@@ -1024,7 +1055,7 @@ namespace ComputerInventory
             int machineId = -1;
             string serviceTag;
             Console.Clear();
-            WriteHeader("Add warranty Info to an Existing Machine");
+            ConsoleHelper.WriteHeader("Add warranty Info to an Existing Machine");
             Console.WriteLine();
             List<Machine> lMachine = GetListOfMachines();
             foreach (Machine m in lMachine)
@@ -1159,7 +1190,7 @@ namespace ComputerInventory
                 }
             } while (!cont);
             Console.Clear();
-            WriteHeader("Add Warranty Info To an Existing Machine");
+            ConsoleHelper.WriteHeader("Add Warranty Info To an Existing Machine");
             Console.WriteLine("You have entered the following:");
             Console.WriteLine($"Machine: {machine.Name}");
             Console.WriteLine($"Service Tag: {machineWarranty.ServiceTag}");
@@ -1171,7 +1202,7 @@ namespace ComputerInventory
             {
                 cki = Console.ReadKey(true);
                 result = cki.KeyChar.ToString();
-                cont = ValidateYorN(result);
+                cont = ConsoleHelper.ValidateYorN(result);
             } while (!cont);
             Console.WriteLine();
             if (result.ToLower() == "y")
@@ -1208,7 +1239,7 @@ namespace ComputerInventory
             ConsoleKeyInfo cki;
             bool cont = false;
             Console.Clear();
-            WriteHeader("Add new Warranty Provider");
+            ConsoleHelper.WriteHeader("Add new Warranty Provider");
             Console.WriteLine("\r\n\r\nPlease enter the name of the Provider and then hit Enter.");
             provider = Console.ReadLine();
 
@@ -1298,78 +1329,51 @@ namespace ComputerInventory
                 SupportNumber = phoneNumber,
                 SupportExtension = extension
             };
+
+            var vResults = new List<ValidationResult>();
+            var vContext = new ValidationContext(wp);
+            bool isValid = Validator.TryValidateObject(wp, vContext, vResults, true);
+
+            if (!isValid)
+            {
+                Console.WriteLine();
+                foreach (var res in vResults)
+                {
+                    Console.WriteLine($"{((string[])res.MemberNames)[0]} threw an error of :\r\n\t {res.ErrorMessage.ToString()}");
+
+                }
+                Console.ReadKey();
+                CreateNewWarrantyProvider();
+            }
+
+
             return wp;
         }
 
-        static string DisplayAllMachines()
+        static string DisplayAllMachines(string textToDisplay = "Enter the MachineId followed by the Enter Key for more information")
         {
             Console.Clear();
             List<Machine> lMachine = GetListOfMachines();
+            Console.WriteLine("Machine ID | Machine Name");
             foreach (Machine m in lMachine)
             {
                 Console.WriteLine($"{m.MachineId,-11}| {m.Name}");
             }
-            Console.WriteLine("\r\nEnter the MachineId followed by the Enter Key for more information.");
+            Console.WriteLine();
+            Console.WriteLine(textToDisplay);
             Console.WriteLine("Hit the Esc key at anytime to exit the menu.");
-            string machineId = GetNumbersFromConsole();
+            string machineId = ConsoleHelper.GetNumbersFromConsole();
             int machId = 0;
             if (machineId.Length > 0)
             {
                 machId = Convert.ToInt32(machineId);
-                //DisplayMachineDetail(machId);
+                DisplayMachineDetail(machId);
 
             }
             return machId.ToString();
         }
 
-        static string GetNumbersFromConsole()
-        {
-            ConsoleKeyInfo cki;
-            bool cont = false;
-            string numbers = string.Empty;
-            do
-            {
-                cki = Console.ReadKey(true);
-                if (cki.Key == ConsoleKey.Escape)
-                {
-                    cont = true;
-                    numbers = "";
-                }
-                else if (cki.Key == ConsoleKey.Enter)
-                {
-                    if (numbers.Length > 0)
-                    {
-                        cont = true;
-                    }
-                    else
-                    {
-                        Console.WriteLine("Please enter an ID that is at least 1 digit.");
-                    }
-                }
-                else if (cki.Key == ConsoleKey.Backspace)
-                {
-                    Console.Write("\b \b");
-                    try
-                    {
-                        numbers = numbers.Substring(0, numbers.Length - 1);
-                    }
-                    catch (System.ArgumentOutOfRangeException)
-                    {
-                        // at the 0 position, can't go any further back
-                    }
-                }
-                else
-                {
-                    if (char.IsNumber(cki.KeyChar))
-                    {
-                        numbers += cki.KeyChar.ToString();
-                        Console.Write(cki.KeyChar.ToString());
-                    }
-                }
-            } while (!cont);
-            return numbers;
-        }
-
+ 
         static void DisplayMachineDetail(int machineId)
         {
             Console.Clear();
@@ -1412,7 +1416,7 @@ namespace ComputerInventory
         {
             Console.Clear();
             List<Machine> lMachine = GetListOfMachines();
-            WriteHeader("Update Machine Details");
+            ConsoleHelper.WriteHeader("Update Machine Details");
 
             string machineId = DisplayAllMachines();
             if (machineId.Length > 0)
@@ -1444,67 +1448,7 @@ namespace ComputerInventory
             }
             //Console.ReadKey();
         }
-        static char CheckForYorN(bool intercept)
-        {
-            ConsoleKeyInfo cki;
-            char entry;
-            bool cont = false;
-            do
-            {
-                cki = Console.ReadKey(intercept);
-                entry = cki.KeyChar;
-                cont = ValidateYorN(entry.ToString());
-            } while (!cont);
-            return entry;
-        }
 
-        static string GetTextFromConsole(int minLength, bool allowEscape = false)
-        {
-            ConsoleKeyInfo cki;
-            bool cont = false;
-            string rtnValue = string.Empty;
-            do
-            {
-                cki = Console.ReadKey(true);
-                if (cki.Key == ConsoleKey.Escape)
-                {
-                    if (allowEscape)
-                    {
-                        cont = true;
-                        rtnValue = "";
-                    }
-                }
-                else if (cki.Key == ConsoleKey.Enter)
-                {
-                    if (rtnValue.Length >= minLength)
-                    {
-                        cont = true;
-                    }
-                    else
-                    {
-                        Console.WriteLine($"Please enter least {minLength} characters.");
-                    }
-                }
-                else if (cki.Key == ConsoleKey.Backspace)
-                {
-                    Console.Write("\b \b");
-                    try
-                    {
-                        rtnValue = rtnValue.Substring(0, rtnValue.Length - 1);
-                    }
-                    catch (System.ArgumentOutOfRangeException)
-                    {
-                        // at the 0 position, can't go any further back
-                    }
-                }
-                else
-                {
-                    rtnValue += cki.KeyChar.ToString();
-                    Console.Write(cki.KeyChar.ToString());
-                }
-            } while (!cont);
-            return rtnValue;
-        }
 
         // Update machine 
 
@@ -1519,27 +1463,27 @@ namespace ComputerInventory
                 {
                     Console.WriteLine($"Machine Name: { machine.Name} \r\nDo you wish to change it? ");
                 }
-                response = CheckForYorN(true);
+                response = ConsoleHelper.CheckForYorN(true);
                 if (response == 'y')
                 {
                     Console.WriteLine("Enter a new machine name and hit Enter to continue");
-                    machine.Name = GetTextFromConsole(3);
+                    machine.Name = ConsoleHelper.GetTextFromConsole(3);
 
                 }
                 Console.WriteLine($"General Role: {machine.GeneralRole} \r\nDo you wish to change it?");
-                response = CheckForYorN(true);
+                response = ConsoleHelper.CheckForYorN(true);
                 if (response == 'y')
                 {
                     Console.WriteLine("Enter a new General Role For the Machine and then hit Enter to continue");
-                    machine.GeneralRole = GetTextFromConsole(5);
+                    machine.GeneralRole = ConsoleHelper.GetTextFromConsole(5);
                 }
                 Console.WriteLine($"Installed Roles: {machine.InstalledRoles}\r\nDo you wish to change it ? ");
-                response = CheckForYorN(true);
+                response = ConsoleHelper.CheckForYorN(true);
                 if (response == 'y')
                 {
                     Console.WriteLine("Enter a new listing of Installed Roles For the Machine and then hit Enter to continue");
                     Console.WriteLine("You can hit Esc to exit without making any changes");
-                    string result = GetTextFromConsole(5, true);
+                    string result = ConsoleHelper.GetTextFromConsole(5, true);
                     if (result.Length >= 5)
                     {
                         machine.InstalledRoles = result;
@@ -1848,6 +1792,7 @@ namespace ComputerInventory
             string result;
             bool cont = false;
             System.Linq.Expressions.Expression<Func<OperatingSys, bool>> whereClause = o => o.StillSupported == true;
+
             string pageOptions = "";
             List<OperatingSys> lOperatingsys;
             Console.Clear();
@@ -1856,14 +1801,15 @@ namespace ComputerInventory
             {
                 cki = Console.ReadKey(true);
                 result = cki.KeyChar.ToString();
-                cont = ValidateYorN(result);
+                cont = ConsoleHelper.ValidateYorN(result);
             } while (!cont);
 
             if (result.ToLower() == "y")
             {
                 DisplayOperatingSystems();
             }
-            else {
+            else
+            {
                 Console.WriteLine("Do you want to view [a]ll, [s]upported operating systems or [u]nsupported operating systems?");
                 cont = false;
                 do
@@ -1892,15 +1838,190 @@ namespace ComputerInventory
                 int pageIndex = 0;
                 Console.WriteLine("How many results do you want per page, enter a number between 3 and 5");
                 cont = false;
+                do
+                {
+                    cki = Console.ReadKey(true);
+                    if (cki.Key == ConsoleKey.D3 || cki.Key == ConsoleKey.D4 || cki.
+                    Key == ConsoleKey.D5)
+                    {
+                        result = cki.KeyChar.ToString();
+                        cont = true;
+                    }
+                } while (!cont);
+                pageSize = Convert.ToInt16(result);
+                cont = false;
+                do
+                {
+                    Console.Clear();
+                    using (var context = new MachineContext())
+                    {
+                        lOperatingsys = context.OperatingSys
+                        .Where(whereClause)
+                        .OrderBy(i => i.OperatingSysId)
+                        .Skip(pageIndex * pageSize)
+                        .Take(pageSize)
+                        .ToList();
+                    }
+                    foreach (OperatingSys os in lOperatingsys)
+                    {
+                        Console.Write($"Name: {os.Name,-39}\tStill Supported = ");
+                        if (os.StillSupported == true)
+                        {
+                            Console.ForegroundColor = ConsoleColor.Green;
+                        }
+                        else
+                        {
+                            Console.ForegroundColor = ConsoleColor.Red;
+                        }
+                        Console.WriteLine(os.StillSupported);
+                        Console.ForegroundColor = ConsoleColor.White;
+                    }
+                    if (pageIndex == 0)
+                    {
+                        pageOptions = "Hit Esc to exit\tN for Next";
+                    }
+                    else
+                    {
+                        pageOptions = "Hit Esc to exit\tN for Next\tP for Previous";
+                    }
+                    Console.WriteLine($"Page: {pageIndex}\t{pageOptions}");
+                    cki = Console.ReadKey(true);
+                    if (cki.Key == ConsoleKey.Escape)
+                    {
+                        cont = true;
+                    }
+                    else if (cki.Key == ConsoleKey.N)
+                    {
+                        pageIndex++;
+                    }
+                    else if (cki.Key == ConsoleKey.P)
+                    {
+                        if (pageIndex > 0)
+                        {
+                            pageIndex--;
+                        }
+                    }
+
+                }
+                while (!cont);
             }
+
+
 
         }
 
+        public static void SupportMenu()
+        {
+            ConsoleKeyInfo cki;
+            int result = -1;
+            bool cont = false;
+            do
+            {
+                Console.Clear();
+                ConsoleHelper.WriteHeader("Support Menu");
+                Console.WriteLine("\r\nPlease select from the list below for what you would like to do today");
+                Console.WriteLine("1. Create a New Support Ticket");
+                Console.WriteLine("2. Update a Support Ticket");
+                Console.WriteLine("3. View All Tickets");
+                Console.WriteLine("9. Exit Menu");
+                cki = Console.ReadKey();
+                try
+                {
+                    result = Convert.ToInt16(cki.KeyChar.ToString());
+                    if (result == 1)
+                    {
+                        CreateSupportTicket();
+                    }
+                    else if (result == 2)
+                    {
+                        //UpdateSupportTicket();
+                    }
+                    else if (result == 3)
+                    {
+                        //DisplaySupportTickets();
+                    }
+                    else if (result == 9)
+                    {
+                        // We are exiting so nothing to do
+                        cont = true;
+                    }
+                }
+                catch (System.FormatException)
+                {
+                    // a key that wasn't a number
+                }
+
+            } while (!cont);
+        }
+
+        public static void CreateSupportTicket()
+        {
+            string ticketOpenedBy = Environment.UserName;
+            DateTime dateReported = DateTime.Now;
+            int machineId;
+            string issueDescription;
+            string issueDetail;
+
+            string tempMachineId = DisplayAllMachines("Enter the MachineId followed by the Enter key for our support ticket");
+            bool machineIdReturned = Int32.TryParse(tempMachineId, out machineId);
+            if (machineIdReturned)
+            {
+                Console.WriteLine("\r\nEnter a brief description of the issue:");
+                issueDescription = ConsoleHelper.GetTextFromConsole(5, false);
+                Console.WriteLine("\r\nEnter a detailed description of the issue:");
+                issueDetail = ConsoleHelper.GetTextFromConsole(5, false);
+
+                SupportTicket _supportTicket = new SupportTicket
+                {
+                    MachineId = machineId,
+                    TicketOpenedBy = ticketOpenedBy,
+                    DateReported = dateReported,
+                    IssueDescription = issueDescription,
+                    IssueDetail = issueDetail
+                };
+                var vResults = new List<ValidationResult>();
+                var vContext = new ValidationContext(_supportTicket);
+                bool isValid = Validator.TryValidateObject(_supportTicket, vContext,
+                vResults, true);
+                if (!isValid)
+                {
+                    Console.WriteLine();
+                    foreach (var res in vResults)
+                    {
+                        Console.WriteLine($"{((string[])res.MemberNames)[0]} threw an error of:\r\n\t { res.ErrorMessage.ToString()} ");
+                        if (((string[])res.MemberNames)[0] == "IssueDescription")
+                        {
+                            Console.WriteLine("Please enter a description that is 50 characters or less.");
+                            do
+                            {
+                                issueDescription = ConsoleHelper.GetTextFromConsole(5, false);
+                            } while (issueDescription.Count() <= 50);
+                            _supportTicket.IssueDescription = issueDescription;
+                        }
+                        Console.WriteLine("Hit any key to continue...");
+                        Console.ReadKey();
+                    }
+                }
+                Console.WriteLine("Hit any key to continue...");
+                Console.ReadKey();
+
+                Console.WriteLine("Saving new Support Ticket");
+                using (MachineContext context = new MachineContext())
+                {
+                    context.SupportTicket.Add(_supportTicket);
+                    context.SaveChanges();
+                    Console.WriteLine("Save complete!");
+
+                }
+
+
+
+
+            }
+
+        }
     }
 }
-
-
-
 
 
 
