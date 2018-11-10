@@ -111,6 +111,8 @@ namespace ComputerInventory
         }
         private void AddSupportLogEntry(string entry, bool close, int ticketId)
         {
+            bool modelIsValid = false;
+            ModelValidation mv = new ModelValidation();
             Console.WriteLine("Saving new log entry");
             using (MachineContext context = new MachineContext())
             {
@@ -121,13 +123,29 @@ namespace ComputerInventory
                     SupportLogUpdatedBy = Environment.UserName,
                     SupportLogEntryDate = DateTime.Now
                 };
-                context.SupportLog.Add(sLogEntry);
-                int res = context.SaveChanges();
-                Console.WriteLine($"{res} record saved");
+
+                modelIsValid = mv.ValidateSupportLog(sLogEntry, "save");
+                if (modelIsValid)
+                {
+                    context.SupportLog.Add(sLogEntry);
+                    int res = context.SaveChanges();
+                    Console.WriteLine($"{res} record saved");
+                }
             }
-            if (close)
+            if (modelIsValid)
             {
-                CloseTicket(ticketId);
+                if (close)
+                {
+                    CloseTicket(ticketId);
+                }
+            }
+            else {
+                Console.WriteLine("There is a problem with your Entry, please try again");
+                foreach (var error in mv.errorList)
+                {
+                    Console.WriteLine($"{error.FieldName} {error.Error}");
+                }
+                Console.ReadKey();
             }
         }
         private void CloseTicket(int ticketId)
@@ -142,6 +160,6 @@ namespace ComputerInventory
                 context.SaveChanges();
                 Console.WriteLine("Ticket is closed");
             }
-}
+        }
     }
 }

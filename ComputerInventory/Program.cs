@@ -12,7 +12,7 @@ using System.ComponentModel.DataAnnotations;
 
 namespace ComputerInventory
 {
-    class Program
+    public class Program
     {
         public static void Main(string[] args)
         {
@@ -79,6 +79,15 @@ namespace ComputerInventory
                         //RightOuterJoin();
                         //LogicalAnd();
                         //Console.ReadKey();
+                    }
+
+                    else if(result == 7)
+                    {
+                        using (MachineContext context = new MachineContext())
+                        {
+                            context.Database.OpenConnection();
+                            List<SupportLog> lst = context.SupportLog.FromSql("sp_GetSupportLogEntries2 @p0", 6).ToList();
+                        }
                     }
                     else if (result == 9)
                     {
@@ -1912,6 +1921,7 @@ namespace ComputerInventory
 
         public static void SupportMenu()
         {
+            SupportTicketLogEntry cs = new SupportTicketLogEntry();
             ConsoleKeyInfo cki;
             int result = -1;
             bool cont = false;
@@ -1934,7 +1944,7 @@ namespace ComputerInventory
                     }
                     else if (result == 2)
                     {
-                        //UpdateSupportTicket();
+                        cs.UpdateSupportTicket();
                     }
                     else if (result == 3)
                     {
